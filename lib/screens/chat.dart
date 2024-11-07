@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:witsy/components/chat_input.dart' as wci;
+import 'package:witsy/components/conversation_list.dart';
 import 'package:witsy/components/message_assistant.dart';
 import 'package:witsy/components/message_user.dart';
 import 'package:witsy/controllers/conversation_controller.dart';
@@ -9,38 +11,40 @@ import 'package:flutter_chat_core/flutter_chat_core.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flyer_chat_image_message/flyer_chat_image_message.dart';
 import 'package:uuid/uuid.dart';
+import 'package:witsy/models/chunk.dart';
 import 'package:witsy/models/conversation.dart';
 import 'package:witsy/models/history.dart';
-
-import '../models/chunk.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({
     super.key,
-    required this.title,
-    required this.history,
   });
-
-  final String title;
-  final History history;
 
   @override
   State<ChatPage> createState() => _ChatPageState();
 }
 
 class _ChatPageState extends State<ChatPage> {
-  late ConversationController _chatController;
+  ConversationController? _chatController;
   //final _scrollController = ScrollController();
   final _user = const User(id: 'user');
   final _assistant = const User(id: 'assistant');
   bool drawerOpened = false;
   String output = '';
 
+  Conversation? get conversation => _chatController?.conversation;
+
   @override
   void initState() {
     super.initState();
+    initHistory();
+  }
+
+  void initHistory() async {
+    final history = Provider.of<History>(context, listen: false);
+    await history.load();
     _chatController = ConversationController(
-      conversation: widget.history.newConversation(),
+      conversation: history.newConversation(),
     );
   }
 
@@ -71,7 +75,7 @@ class _ChatPageState extends State<ChatPage> {
               imageMessageBuilder: (context, message) =>
                   FlyerChatImageMessage(message: message),
             ),
-            chatController: _chatController,
+            chatController: _chatController!,
             //scrollController: _scrollController,
             user: _user,
             onMessageSend: _addItem,
@@ -95,15 +99,16 @@ class _ChatPageState extends State<ChatPage> {
     // reset output
     output = '';
 
+    final history = Provider.of<History>(context, listen: false);
     LlmClient().prompt(
-      _chatController.messages,
+      conversation!.messages,
       prompt,
-      (chunk) => _onResponse(responseId, chunk),
+      (chunk) => _onResponse(history, responseId, chunk),
     );
   }
 
   void _addMessage(TextMessage message) async {
-    await _chatController.insert(message);
+    await _chatController!.insert(message);
   }
 
   void _addItem(String? message) {
@@ -136,13 +141,18 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _resetConversation() {
+    if (!conversation!.hasContent()) {
+      return;
+    }
     setState(() {
-      Conversation conversation = widget.history.newConversation();
-      _chatController.setConversation(conversation);
+      final history = Provider.of<History>(context, listen: false);
+      Conversation conversation = history.newConversation();
+      _chatController!.setConversation(conversation);
     });
   }
 
   void _onResponse(
+    History history,
     String responseId,
     LLmChunk chunk,
   ) async {
@@ -152,18 +162,31 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     // find message to update
-    final possiblyUpdatedMessage = _chatController.messages.firstWhere(
+    final possiblyUpdatedMessage = _chatController!.messages.firstWhere(
       (element) => element.id == responseId,
     ) as TextMessage;
 
-    // updat it
-    await _chatController.update(
+    // update it
+    bool done = chunk.type == 'content' && chunk.done;
+    await _chatController!.update(
       possiblyUpdatedMessage,
       possiblyUpdatedMessage.copyWith(text: output, metadata: {
-        'transient': chunk.type != 'content' || !chunk.done,
+        'transient': !done,
         'tool': chunk.type == 'tool' ? chunk : null,
       }),
     );
+
+    // if done, get a title
+    if (done && !_chatController!.conversation.hasTitle()) {
+      var title = await LlmClient().title(conversation!.messages);
+      setState(() => _chatController!.conversation.title = title);
+    }
+
+    // save history
+    if (done) {
+      print('Saing history');
+      history.save();
+    }
   }
 
   AppBar _appBar(Color mainBgColor, ThemeData theme) {
@@ -182,7 +205,7 @@ class _ChatPageState extends State<ChatPage> {
         ),
       ),
       title: Text(
-        widget.title,
+        'Witsy',
         style: TextStyle(
           fontWeight: FontWeight.bold,
           color: theme.appBarTheme.foregroundColor,
@@ -214,6 +237,7 @@ class _ChatPageState extends State<ChatPage> {
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
+            margin: EdgeInsets.zero,
             child: Column(
               children: [
                 Image.asset('assets/icon.png', height: 100),
@@ -227,19 +251,16 @@ class _ChatPageState extends State<ChatPage> {
               ],
             ),
           ),
-          ListTile(
-            title: const Text('Item 1'),
-            onTap: () {
-              // Update the state of the app.
-              // ...
-            },
-          ),
-          ListTile(
-            title: const Text('Item 2'),
-            onTap: () {
-              // Update the state of the app.
-              // ...
-            },
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: ConversationList(
+              onConversationTap: (conversation) {
+                setState(() {
+                  _chatController!.setConversation(conversation);
+                  Navigator.pop(context);
+                });
+              },
+            ),
           ),
         ],
       ),

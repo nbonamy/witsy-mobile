@@ -22,4 +22,14 @@ class LLmChunk {
       done: json['done'] as bool,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'type': type,
+      'text': text,
+      'name': name,
+      'status': status,
+      'done': done,
+    };
+  }
 }

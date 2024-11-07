@@ -1,29 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:witsy/models/history.dart';
 import 'package:witsy/screens/chat.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  MyApp({super.key});
+  const MyApp({super.key});
 
-  final History history = History(conversations: []);
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: _getTheme(context, false),
-      darkTheme: _getTheme(context, true),
-      themeMode: ThemeMode.system,
-      home: Directionality(
-        textDirection: TextDirection.ltr,
-        child: ChatPage(
-          title: 'Witsy',
-          history: history,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<History>(
+          create: (_) => History(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Flutter Demo',
+        theme: _getTheme(context, false),
+        darkTheme: _getTheme(context, true),
+        themeMode: ThemeMode.system,
+        home: const Directionality(
+          textDirection: TextDirection.ltr,
+          child: ChatPage(),
         ),
       ),
     );

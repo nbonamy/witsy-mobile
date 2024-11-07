@@ -32,4 +32,15 @@ class Message {
   void updateMessage(String content) {
     this.content = content;
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'role': role,
+      'createdAt': createdAt.toIso8601String(),
+      'content': content,
+      'transient': transient,
+      'toolCall': toolCall?.toJson(),
+    };
+  }
 }

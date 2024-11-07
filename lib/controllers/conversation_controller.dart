@@ -14,6 +14,20 @@ class ConversationController extends ChatController {
   void setConversation(Conversation conversation) {
     _messages.clear();
     this.conversation = conversation;
+    _messages.addAll(
+      conversation.messages.map(
+        (c) => TextMessage(
+          id: c.id,
+          author: User(id: c.role),
+          createdAt: c.createdAt,
+          text: c.content ?? '',
+          metadata: {
+            'transient': c.transient,
+            'toolCall': c.toolCall,
+          },
+        ),
+      ),
+    );
     _operationsController.add(ChatOperation.set());
   }
 
@@ -52,6 +66,7 @@ class ConversationController extends ChatController {
       if (index == null) {
         _messages.add(message);
         conversation.messages.add(_convert(message));
+        conversation.updatedAt = DateTime.now();
         _operationsController.add(ChatOperation.insert(
           message,
           conversation.messages.length - 1,
@@ -59,6 +74,7 @@ class ConversationController extends ChatController {
       } else {
         _messages.insert(index, message);
         conversation.messages.insert(index, _convert(message));
+        conversation.updatedAt = DateTime.now();
         _operationsController.add(ChatOperation.insert(message, index));
       }
     } else {
@@ -75,6 +91,7 @@ class ConversationController extends ChatController {
       if (index != -1) {
         _messages[index] = newMessage;
         conversation.messages[index] = _convert(newMessage);
+        conversation.updatedAt = DateTime.now();
         _operationsController.add(ChatOperation.update(oldMessage, newMessage));
       } else {
         throw Exception('Message not found');
@@ -91,6 +108,7 @@ class ConversationController extends ChatController {
     if (index > -1) {
       _messages.removeAt(index);
       conversation.messages.removeAt(index);
+      conversation.updatedAt = DateTime.now();
       _operationsController.add(ChatOperation.remove(message, index));
     }
   }

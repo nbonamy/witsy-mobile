@@ -1,10 +1,10 @@
 import 'dart:convert';
-import 'package:flutter_chat_core/flutter_chat_core.dart';
 import 'package:http/http.dart' as http;
 import 'package:witsy/models/chunk.dart';
+import 'package:witsy/models/message.dart';
 
 class LlmClient {
-  void prompt(
+  Future<void> prompt(
     List<Message> messages,
     String prompt,
     void Function(LLmChunk) callback,
@@ -17,10 +17,8 @@ class LlmClient {
     var requestBody = {
       "engine": "openai",
       "model": "gpt-4o",
-      "messages": messages
-          .whereType<TextMessage>()
-          .map((e) => {"role": e.author.id, "content": e.text})
-          .toList(),
+      "messages":
+          messages.map((m) => {"role": m.role, "content": m.content}).toList(),
       "prompt": prompt
     };
 
@@ -40,29 +38,18 @@ class LlmClient {
   Future<String> title(
     List<Message> messages,
   ) async {
-    http.Request request = http.Request(
-      'POST',
-      Uri.parse('http://localhost:3000/llm/title'),
-    );
-
     var requestBody = {
       "engine": "openai",
       "model": "gpt-4o",
-      "messages": messages
-          .whereType<TextMessage>()
-          .map((e) => {"role": e.author.id, "content": e.text})
-          .toList(),
-      "prompt": prompt
+      "messages":
+          messages.map((e) => {"role": e.role, "content": e.content}).toList(),
     };
 
-    request.body = jsonEncode(requestBody);
-    request.headers.addAll(
-      {'Content-Type': 'application/json', 'API_KEY': 'YOUR_API_KEY'},
+    http.Response response = await http.post(
+      Uri.parse('http://localhost:3000/llm/title'),
+      headers: {'Content-Type': 'application/json', 'API_KEY': 'YOUR_API_KEY'},
+      body: jsonEncode(requestBody),
     );
-
-    http.Response response = await http.Client().post(
-        Uri.parse('http://localhost:3000/llm/title'),
-        headers: {'Content-Type': 'application/json'});
     var result = jsonDecode(response.body);
     return result['title'];
   }
