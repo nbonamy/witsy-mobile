@@ -12,15 +12,21 @@ class History extends ChangeNotifier {
     conversations = [];
   }
 
-  Conversation newConversation() {
-    final conversation = Conversation();
-    conversations.add(conversation);
+  void add(Conversation conversation) {
+    if (!conversations.any((c) => c.id == conversation.id)) {
+      conversations.add(conversation);
+      notifyListeners();
+      save();
+    }
+  }
+
+  void delete(Conversation conversation) {
+    conversations.removeWhere((c) => c.id == conversation.id);
     notifyListeners();
-    return conversation;
+    save();
   }
 
   save() async {
-    print('Saving history:' + conversations.length.toString());
     final file = File(await _getFilePath());
     final json = jsonEncode({
       'conversations': conversations
@@ -34,6 +40,7 @@ class History extends ChangeNotifier {
 
   load() async {
     final filePath = await _getFilePath();
+    // ignore: avoid_print
     print('Loading history from $filePath');
     final file = File(filePath);
     if (file.existsSync()) {

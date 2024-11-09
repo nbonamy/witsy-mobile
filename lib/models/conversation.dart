@@ -3,7 +3,7 @@ import 'package:witsy/models/message.dart';
 
 class Conversation {
   late String id;
-  late String title;
+  String title;
   late DateTime createdAt;
   late DateTime updatedAt;
   late String? engineId;
@@ -12,9 +12,8 @@ class Conversation {
 
   static const String defaultTitle = 'New Chat';
 
-  Conversation() {
+  Conversation({this.title = defaultTitle}) {
     id = const Uuid().v4();
-    title = defaultTitle;
     createdAt = DateTime.now();
     updatedAt = DateTime.now();
     engineId = null;

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:witsy/models/conversation.dart';
@@ -16,20 +17,43 @@ class ConversationList extends StatelessWidget {
       ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     return ListView.builder(
       shrinkWrap: true,
+      padding: const EdgeInsets.all(16),
       itemCount: conversations.length,
       itemBuilder: (context, index) {
         final conversation = conversations[index];
-        return ListTile(
-          splashColor: Colors.transparent,
-          title: Text(
-            conversation.title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
+
+        final text = Text(
+          conversation.title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.5,
+          ),
+        );
+
+        final wrapped = GestureDetector(
+          onTap: () => onConversationTap(conversation),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: text,
+          ),
+        );
+
+        return Dismissible(
+          key: Key(conversation.id),
+          direction: DismissDirection.endToStart,
+          onDismissed: (direction) {
+            history.delete(conversation);
+          },
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 16),
+            color: Colors.red,
+            child: const Icon(
+              CupertinoIcons.delete,
+              color: Colors.white,
             ),
           ),
-          onTap: () {
-            onConversationTap(conversation);
-          },
+          child: wrapped,
         );
       },
     );

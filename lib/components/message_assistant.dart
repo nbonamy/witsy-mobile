@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_chat_core/flutter_chat_core.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as md;
+import 'package:url_launcher/url_launcher.dart';
 import 'package:witsy/components/message_base.dart';
+import 'package:witsy/components/pulsing_icon.dart';
 
 extension ListSpaceBetweenExtension on List<Widget> {
   List<Widget> withSpaceBetween({
@@ -37,8 +39,18 @@ class AssistantMessage extends StatelessWidget with MessageMixin {
               if (message.text.isNotEmpty)
                 MarkdownBody(
                   data: message.text,
+                  selectable: true,
                   styleSheet: getMarkdownStyleSheet(context, false),
                   extensionSet: md.ExtensionSet.gitHubWeb,
+                  onTapLink: (text, href, title) => {
+                    if (href != null)
+                      {
+                        launchUrl(
+                          Uri.parse(href),
+                          mode: LaunchMode.externalApplication,
+                        )
+                      }
+                  },
                 ),
               if (message.metadata?['tool'] != null &&
                   message.metadata?['tool'].status != null) ...[
@@ -53,9 +65,11 @@ class AssistantMessage extends StatelessWidget with MessageMixin {
               if (message.metadata?['transient'] == true) ...[
                 Container(
                   margin: const EdgeInsets.only(top: 6),
-                  child: const Icon(
-                    CupertinoIcons.circle_fill,
-                    size: 12,
+                  child: const PulsingIcon(
+                    child: Icon(
+                      CupertinoIcons.circle_fill,
+                      size: 12,
+                    ),
                   ),
                 ),
               ]

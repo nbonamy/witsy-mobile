@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_core/flutter_chat_core.dart';
+// ignore: implementation_imports
+import 'package:flutter_chat_ui/src/utils/chat_input_height_notifier.dart';
 import 'package:provider/provider.dart';
 
 typedef OnAttachmentTapCallback = VoidCallback;
@@ -12,6 +14,7 @@ class ChatInput extends StatefulWidget {
   final double? right;
   final double? top;
   final double? bottom;
+  final Color? backgroundColor;
   final EdgeInsetsGeometry? padding;
   final double? gap;
   final InputBorder? inputBorder;
@@ -19,10 +22,11 @@ class ChatInput extends StatefulWidget {
 
   const ChatInput({
     super.key,
-    this.left = 16,
-    this.right = 16,
+    this.left = 24,
+    this.right = 24,
     this.top,
     this.bottom = 0,
+    this.backgroundColor,
     this.padding = const EdgeInsets.all(8.0),
     this.gap = 0,
     this.inputBorder = const OutlineInputBorder(
@@ -43,6 +47,7 @@ class _ChatInputState extends State<ChatInput> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateInputHeight());
   }
 
   @override
@@ -63,9 +68,11 @@ class _ChatInputState extends State<ChatInput> {
       top: widget.top,
       bottom: widget.bottom,
       child: Container(
+        color: widget.backgroundColor ?? Colors.transparent,
         padding: EdgeInsets.only(
           left: widget.left ?? 0,
           right: widget.right ?? 0,
+          top: 16,
         ),
         child: Container(
           key: _inputKey,
@@ -106,6 +113,16 @@ class _ChatInputState extends State<ChatInput> {
         ),
       ),
     );
+  }
+
+  void _updateInputHeight() {
+    final renderBox =
+        _inputKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      context
+          .read<ChatInputHeightNotifier>()
+          .updateHeight(renderBox.size.height);
+    }
   }
 
   void _handleSubmitted(String text) {
