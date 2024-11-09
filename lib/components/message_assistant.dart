@@ -52,27 +52,32 @@ class AssistantMessage extends StatelessWidget with MessageMixin {
                       }
                   },
                 ),
-              if (message.metadata?['tool'] != null &&
-                  message.metadata?['tool'].status != null) ...[
-                Text(
-                  message.metadata?['tool'].status,
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-              if (message.metadata?['transient'] == true) ...[
-                Container(
-                  margin: const EdgeInsets.only(top: 6),
-                  child: const PulsingIcon(
-                    child: Icon(
-                      CupertinoIcons.circle_fill,
-                      size: 12,
+              if (message.metadata?['transient'] == true)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(top: 6),
+                      child: const PulsingIcon(
+                        child: Icon(
+                          CupertinoIcons.circle_fill,
+                          size: 12,
+                        ),
+                      ),
                     ),
-                  ),
+                    if (message.metadata?['tool'] != null &&
+                        message.metadata?['tool'].status != null) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        message.metadata?['tool'].status,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ]
             ].withSpaceBetween(height: 12),
           ),
         ),
