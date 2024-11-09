@@ -5,10 +5,18 @@ import 'package:witsy/models/conversation.dart';
 import 'package:witsy/models/history.dart';
 
 typedef ConversationTapCallback = void Function(Conversation conversation);
+typedef ConversationConfirmDeleteCallback = Future<bool?> Function(
+  Conversation conversation,
+);
 
 class ConversationList extends StatelessWidget {
   final ConversationTapCallback onConversationTap;
-  const ConversationList({super.key, required this.onConversationTap});
+  final ConversationConfirmDeleteCallback confirmConversationDelete;
+  const ConversationList({
+    super.key,
+    required this.onConversationTap,
+    required this.confirmConversationDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -41,8 +49,8 @@ class ConversationList extends StatelessWidget {
         return Dismissible(
           key: Key(conversation.id),
           direction: DismissDirection.endToStart,
-          onDismissed: (direction) {
-            history.delete(conversation);
+          confirmDismiss: (direction) {
+            return confirmConversationDelete(conversation);
           },
           background: Container(
             alignment: Alignment.centerRight,

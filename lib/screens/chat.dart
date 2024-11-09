@@ -245,6 +245,47 @@ class _ChatPageState extends State<ChatPage> {
 
   void _deletChat() {
     _toggleMenu();
+    _tryDeleteChat(context, _chatController!.conversation);
+  }
+
+  Future<bool?> _tryDeleteChat(
+    BuildContext context,
+    Conversation conversation,
+  ) async {
+    return showCupertinoDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => CupertinoAlertDialog(
+        title: const Text('Are you sure you want to delete this conversation?'),
+        content: const Text('You can\'t undo this action.'),
+        actions: <CupertinoDialogAction>[
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () {
+              Navigator.of(context).pop(false);
+            },
+            child: const Text('Cancel'),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              _doDeleteChat(conversation);
+              Navigator.of(context).pop(true);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _doDeleteChat(Conversation conversation) {
+    setState(() {
+      final history = Provider.of<History>(context, listen: false);
+      history.delete(conversation);
+      if (_chatController?.conversation == conversation) {
+        _resetConversation();
+      }
+    });
   }
 
   AppBar _appBar(Color mainBgColor, ThemeData theme) {
@@ -343,6 +384,9 @@ class _ChatPageState extends State<ChatPage> {
                   _chatController!.setConversation(conversation);
                   Navigator.pop(context);
                 });
+              },
+              confirmConversationDelete: (conversation) {
+                return _tryDeleteChat(context, conversation);
               },
             ),
           ),
