@@ -115,30 +115,45 @@ class _ChatPageState extends State<ChatPage> {
     // do it
     final prefs = Provider.of<Preferences>(context, listen: false);
     final history = Provider.of<History>(context, listen: false);
-    final stream = LlmClient().prompt(
-      prefs.engine.id,
-      prefs.model.id,
-      conversation!.messages.sublist(0, conversation!.messages.length - 2),
-      prompt,
-    );
-    await for (var chunk in stream) {
-      // process
-      _onResponse(prefs, history, responseId, chunk);
 
-      // used to showcase an example where we stop scrolling to the bottom
-      // as soon as message that is being generated reaches top of the viewport
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_scrollController.hasClients || !mounted) return;
-        if ((_scrollController.position.maxScrollExtent -
-                initialMaxScrollExtent) <
-            viewportDimension) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.linearToEaseOut,
-          );
-        }
-      });
+    try {
+      final stream = LlmClient().prompt(
+        prefs.engine.id,
+        prefs.model.id,
+        conversation!.messages.sublist(0, conversation!.messages.length - 2),
+        prompt,
+      );
+      await for (var chunk in stream) {
+        // process
+        _onResponse(prefs, history, responseId, chunk);
+
+        // used to showcase an example where we stop scrolling to the bottom
+        // as soon as message that is being generated reaches top of the viewport
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!_scrollController.hasClients || !mounted) return;
+          if ((_scrollController.position.maxScrollExtent -
+                  initialMaxScrollExtent) <
+              viewportDimension) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.linearToEaseOut,
+            );
+          }
+        });
+      }
+    } catch (e) {
+      print('Error while prompting: $e');
+      _onResponse(
+        prefs,
+        history,
+        responseId,
+        LLmChunk(
+          type: 'content',
+          text: 'Sorry I cannot continue here.',
+          done: true,
+        ),
+      );
     }
   }
 
